@@ -11,7 +11,8 @@ class MIPTSchedule:
         "Введение в профессию: системный аналитик / ассистент Агафонова Т.Н./ 426 ГК": 2 * 2,
         "Физическая культура": 1 * 2,
         "Практикум Python 1 лекция в месяц /Базовый поток Евдокимова А.Ю./115 КПМ/ продвинутый "
-        "поток Честнов Н.Н./ улк 2 поточ. Ауд. 4эт.": 1 * 2}
+        "поток Честнов Н.Н./ улк 2 поточ. Ауд. 4эт.": 1 * 2
+    }  # unit of measurement -- half of a pair
 
     def __init__(self, course, group):
         self.course = course
@@ -76,6 +77,6 @@ class MIPTSchedule:
                         # don't use "color == another_color" because colors are sometimes read incorrectly
                         if another_subject:
                             return sheet.cell(row_index, 1).value, another_subject
-                        
+
                         position -= 1
         return -1

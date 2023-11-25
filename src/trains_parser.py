@@ -1,5 +1,4 @@
-from dotenv import load_dotenv
-import os
+from config_reader import config
 import requests
 import datetime
 
@@ -11,12 +10,11 @@ class TrainsParser:
     delay = 0
 
     def __init__(self, delay):
-        load_dotenv()  # loading environmental variables
         self.delay = delay
 
     def find_trains(self, from_station, to_station, date):
         params = {
-            "apikey": os.getenv("YANDEX_TRAINS_API_KEY"),
+            "apikey": config.yandex_trains_api_key.get_secret_value(),
             "from": from_station,
             "to": to_station,
             "limit": 200,
@@ -29,8 +27,11 @@ class TrainsParser:
             departure = response["segments"][i]["departure"]
             arrival = response["segments"][i]["arrival"]
 
-            ''' get useful time type; 
-                sorted by departure time '''
+            ''' 
+            get useful time type; 
+            sorted by departure time 
+            '''
+
             departure = datetime.datetime.fromisoformat(departure)
             arrival = datetime.datetime.fromisoformat(arrival)
 
