@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import xlrd
 import requests
+import os
 
 
 class MIPTSchedule:
@@ -34,7 +35,9 @@ class MIPTSchedule:
                     file.write(schedule.content)
 
     def find_first_subject(self, day):
-        wb = xlrd.open_workbook(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls", formatting_info=True)
+        file_name = f"{self.path_to_schedule}schedule_for_course_{self.course}.xls"
+        wb = xlrd.open_workbook(file_name, formatting_info=True)
+        os.remove(file_name)
         sheet = wb.sheet_by_index(0)
         num_of_group_col = -1
         for col, cell in enumerate(sheet.row(4)):

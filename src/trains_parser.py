@@ -8,11 +8,22 @@ class TrainsParser:
     url = "https://api.rasp.yandex.net/v3.0/search/"
     trains = []
     delay = 0
+    stations = {
+        "Савеловская": "s2000009",
+        "Тимирязевская": "s9602463",
+        "Окружная": "s9601830",
+        "Дегунино": "s9601117",
+        "Бескудниково": "s9601805",
+        "Лианозово": "s9600851",
+        "Марк": "s9602214"
+    }
 
-    def __init__(self, delay):
+    def set_delay(self, delay):
         self.delay = delay
 
-    def find_trains(self, from_station, to_station, date):
+    def find_trains(self, from_station):
+        to_station = "s9601261"
+        date = datetime.datetime.today().strftime('%Y-%m-%d')
         params = {
             "apikey": config.yandex_trains_api_key.get_secret_value(),
             "from": from_station,
