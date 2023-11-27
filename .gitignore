@@ -3,6 +3,7 @@
 __pycache__/
 src/.env
 **/*.session
+**/*.sqlite3
 
 # Mac stuff:
 .DS_Store

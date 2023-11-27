@@ -7,13 +7,8 @@ import os
 class MIPTSchedule:
     course = 0
     group = 0
-    path_to_schedule = "src/resources/"
-    optional_subjects = {
-        "Введение в профессию: системный аналитик / ассистент Агафонова Т.Н./ 426 ГК": 2 * 2,
-        "Физическая культура": 1 * 2,
-        "Практикум Python 1 лекция в месяц /Базовый поток Евдокимова А.Ю./115 КПМ/ продвинутый "
-        "поток Честнов Н.Н./ улк 2 поточ. Ауд. 4эт.": 1 * 2
-    }  # unit of measurement -- half of a pair
+    path_to_schedule = "src/"
+    optional_subjects = dict()  # unit of measurement -- half of a pair
 
     def __init__(self, course, group):
         self.course = course
@@ -29,15 +24,15 @@ class MIPTSchedule:
                 mipt_link = "https://mipt.ru" + link["href"]
                 schedule = requests.get(mipt_link)
 
-                with open(f"{self.path_to_schedule}last_schedule.txt", "w") as last_schedule:
-                    last_schedule.write(mipt_link)
                 with open(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls", "wb") as file:
                     file.write(schedule.content)
 
+    def delete_schedule(self):
+        os.remove(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls")
+
     def find_first_subject(self, day):
-        file_name = f"{self.path_to_schedule}schedule_for_course_{self.course}.xls"
-        wb = xlrd.open_workbook(file_name, formatting_info=True)
-        os.remove(file_name)
+        wb = xlrd.open_workbook(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls",
+                                formatting_info=True)
         sheet = wb.sheet_by_index(0)
         num_of_group_col = -1
         for col, cell in enumerate(sheet.row(4)):
