@@ -181,17 +181,18 @@ async def choosing_subjects(message: Message, state: FSMContext):
         for subject in user_data["removed_lessons"][:-1]:
             answer += f"{subject},\n"
         answer += f"{user_data['removed_lessons'][-1]}.\n"
-        await message.answer("<u>Отлично! Вот финальный список список:</u>" + answer,
+        await message.answer("<u>Отлично! Вот финальный список:</u>" + answer,
                              parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
         await message.answer("Заношу в базу данных...")
 
-        if await add_preferences(user_data):
+        if await add_preferences(message.from_user.id, user_data):
             await message.answer("Done")
         else:
             await message.answer("Error 404 я сломался :((\nНапиши админу @snakemanysss")
             await state.clear()
             return
         await state.set_state(Choosing.complete)
+        return
     if message.text not in user_data["first_lessons"]:
         await message.answer("Не знаю такого")
         return
@@ -232,6 +233,11 @@ async def choosing_period(message: Message, state: FSMContext):
             await state.update_data(first_lessons=user_data["first_lessons"])
     await state.set_state(Choosing.subjects)
     await message.answer(answer, parse_mode=ParseMode.HTML, reply_markup=kb.lessons_kb(user_data["first_lessons"]))
+
+
+@router.message(Choosing.complete)
+async def accomplished(message: Message, state: FSMContext):
+    pass
 
 
 @router.message(Command("help"))

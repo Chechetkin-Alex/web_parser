@@ -29,7 +29,8 @@ class Preferences(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    useless_lesson: Mapped[str] = mapped_column(String(250))
+    day: Mapped[int]
+    first_lesson: Mapped[str] = mapped_column(String(250))
 
 
 async def async_main():
