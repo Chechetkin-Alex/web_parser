@@ -18,3 +18,14 @@ async def add_user(user_data):
             return True
         except:
             return False
+
+
+async def add_preferences(user_data):
+    async with async_session() as session:
+        try:
+            for lesson in user_data["removed_lessons"]:
+                session.add(Preferences(useless_lesson=lesson))
+            await session.commit()
+            return True
+        except:
+            return False

@@ -21,15 +21,15 @@ class Users(Base):
     course: Mapped[int]
     group_num: Mapped[str] = mapped_column(String(15))
 
-    preferences = relationship("Preferences", backref="user")
+    preferences = relationship("Preferences", backref="users")
 
 
 class Preferences(Base):
     __tablename__ = 'preferences'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    useless_lesson: Mapped[str] = mapped_column(default=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    useless_lesson: Mapped[str] = mapped_column(String(250))
 
 
 async def async_main():

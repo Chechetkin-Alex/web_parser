@@ -27,6 +27,7 @@ class Registration(StatesGroup):
 class Choosing(StatesGroup):
     subjects = State()
     period = State()
+    complete = State()
 
 
 @router.message(Command("start"))
@@ -149,7 +150,7 @@ async def validate(message: Message, state: FSMContext):
     if await add_user(user_data):
         await message.answer("Всё классно, я тебе запомнил)", reply_markup=ReplyKeyboardRemove())
     else:
-        await message.answer("Error 404 я сломался :((\n Напиши админу @snakemanysss")
+        await message.answer("Error 404 я сломался :((\nНапиши админу @snakemanysss")
         await state.clear()
         return
 
@@ -165,8 +166,7 @@ async def validate(message: Message, state: FSMContext):
     for i in range(0, 7):
         if first_lessons[i] != -1:
             answer += f"<u>{days[i]}</u>: {first_lessons[i]}\n"
-    await message.answer(answer + "\n<b>На какие из них забиваешь?)</b>\n"
-                                  "Если случайно нажал лишнее, нажми <i>undo</i>",
+    await message.answer(answer + "\n<b>На какие из них забиваешь?)</b>",
                          parse_mode=ParseMode.HTML,
                          reply_markup=kb.lessons_kb(first_lessons))
     await state.update_data(removed_lessons=[], first_lessons=first_lessons)
@@ -175,10 +175,27 @@ async def validate(message: Message, state: FSMContext):
 
 @router.message(Choosing.subjects)
 async def choosing_subjects(message: Message, state: FSMContext):
-    if message.text == "Подтвердить":
-        await message.answer("Отлично! Вот твой список:")
-
     user_data = await state.get_data()
+    if message.text == "Подтвердить":
+        answer = "\n"
+        for subject in user_data["removed_lessons"][:-1]:
+            answer += f"{subject},\n"
+        answer += f"{user_data['removed_lessons'][-1]}.\n"
+        await message.answer("<u>Отлично! Вот финальный список список:</u>" + answer,
+                             parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
+        await message.answer("Заношу в базу данных...")
+
+        if await add_preferences(user_data):
+            await message.answer("Done")
+        else:
+            await message.answer("Error 404 я сломался :((\nНапиши админу @snakemanysss")
+            await state.clear()
+            return
+        await state.set_state(Choosing.complete)
+    if message.text not in user_data["first_lessons"]:
+        await message.answer("Не знаю такого")
+        return
+
     user_data["removed_lessons"].append(message.text)
     await state.update_data(removed_lessons=user_data["removed_lessons"])
     await message.answer("А какая продолжительность <b>в парах</b> у этого предмета?",
@@ -192,8 +209,11 @@ async def choosing_period(message: Message, state: FSMContext):
     user_data = await state.get_data()
     period = int(float(message.text) * 2)  # todo check int
     answer = f"<b>Убрано:</b>\n"
-    for subject in user_data["removed_lessons"]:
+    for subject in user_data["removed_lessons"][:-1]:
         answer += f"{subject},\n"
+    answer += f"{user_data['removed_lessons'][-1]}.\n"
+    # todo handle all subjects a day deleted
+    # todo duplicated subjects
     answer += f"\n<b>В какие дни что остаётся:</b>\n"
     days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
     for i in range(0, 7):

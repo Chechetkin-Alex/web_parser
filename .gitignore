@@ -6,6 +6,10 @@ src/.env
 **/*.sqlite3
 **/*.xls
 
+# Temporary
+src/test.py
+todo.md
+
 # Mac stuff:
 .DS_Store
 .AppleDouble
