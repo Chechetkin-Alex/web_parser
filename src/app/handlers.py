@@ -152,19 +152,20 @@ async def validate(message: Message, state: FSMContext):
         await message.answer("Error 404 я сломался :((\n Напиши админу @snakemanysss")
         await state.clear()
         return
+
     await message.answer(f"Запускаю поиск по предметам...")
     schedule = MIPTSchedule(user_data["course"], user_data["group_num"])
     await state.update_data(schedule=schedule)
-    await schedule.download_schedule()
+    schedule.download_schedule()
     first_lessons = []
-    answer = f"Вот, какие предметы тебя ждут по утрам:\n"
+    answer = f"<b>Вот, какие предметы тебя ждут по утрам:</b>\n"
     for day in range(1, 8):
-        first_lessons.append(await schedule.find_first_subject(day))
+        first_lessons.append(schedule.find_first_subject(day))
     days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
     for i in range(0, 7):
         if first_lessons[i] != -1:
-            answer += f"{days[i]}: {first_lessons[i]}\n"
-    await message.answer(answer + "<b>На какие из них забиваешь?)</b>\n"
+            answer += f"<u>{days[i]}</u>: {first_lessons[i]}\n"
+    await message.answer(answer + "\n<b>На какие из них забиваешь?)</b>\n"
                                   "Если случайно нажал лишнее, нажми <i>undo</i>",
                          parse_mode=ParseMode.HTML,
                          reply_markup=kb.lessons_kb(first_lessons))
@@ -187,10 +188,9 @@ async def choosing_subjects(message: Message, state: FSMContext):
 
 
 @router.message(Choosing.period)
-async def choosig_period(message: Message, state: FSMContext):
-
+async def choosing_period(message: Message, state: FSMContext):
     user_data = await state.get_data()
-    period = int(message.text * 2)  # todo check int
+    period = int(float(message.text) * 2)  # todo check int
     answer = f"<b>Убрано:</b>\n"
     for subject in user_data["removed_lessons"]:
         answer += f"{subject},\n"
@@ -200,12 +200,15 @@ async def choosig_period(message: Message, state: FSMContext):
         if user_data["first_lessons"][i] == -1:
             continue
         if user_data["first_lessons"][i] not in user_data["removed_lessons"]:
-            answer += f"{days[i]}: {user_data['first_lessons'][i]}\n"
+            answer += f"<u>{days[i]}</u>: {user_data['first_lessons'][i]}\n"
         else:
-            user_data["schedule"].optional_subjects[user_data["first_lessons"][i]] = period
-            subject = user_data['schedule'].find_first_subject(i)
-            answer += f"{days[i]}: {subject}\n"
-            user_data["first_lessons"].remove(subject)  # todo delete several lessons
+            user_data["schedule"].set_optional_subjects(user_data["first_lessons"][i], period)
+            await state.update_data(schedule=user_data["schedule"])
+            new_subject = user_data["schedule"].find_first_subject(i + 1)
+            user_data["first_lessons"].insert(i, new_subject)
+            answer += f"<u>{days[i]}</u>: {new_subject}\n"
+            user_data["first_lessons"].remove(user_data["removed_lessons"][-1])
+            # todo delete several lessons
             await state.update_data(first_lessons=user_data["first_lessons"])
     await state.set_state(Choosing.subjects)
     await message.answer(answer, parse_mode=ParseMode.HTML, reply_markup=kb.lessons_kb(user_data["first_lessons"]))

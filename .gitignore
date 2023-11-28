@@ -4,6 +4,7 @@ __pycache__/
 src/.env
 **/*.session
 **/*.sqlite3
+**/*.xls
 
 # Mac stuff:
 .DS_Store

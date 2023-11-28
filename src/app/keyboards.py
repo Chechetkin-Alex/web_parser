@@ -26,8 +26,9 @@ validation_kb = ReplyKeyboardMarkup(keyboard=[
 def lessons_kb(lessons):
     subjects = []
     for subject in lessons:
-        subjects.append([KeyboardButton(text=subject[:15])])
-    subjects.append([KeyboardButton(text="undo")])
+        if subject != -1:
+            subjects.append([KeyboardButton(text=subject)])
+    # subjects.append([KeyboardButton(text="undo")])
     subjects.append([KeyboardButton(text="Подтвердить")])
     return ReplyKeyboardMarkup(keyboard=subjects, resize_keyboard=True)
 

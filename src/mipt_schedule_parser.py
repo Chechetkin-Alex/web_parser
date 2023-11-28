@@ -7,7 +7,7 @@ import os
 class MIPTSchedule:
     course = 0
     group = 0
-    path_to_schedule = "src/"
+    path_to_schedule = "src/resources/"
     optional_subjects = dict()  # unit of measurement -- half of a pair
 
     def __init__(self, course, group):
@@ -29,6 +29,9 @@ class MIPTSchedule:
 
     def delete_schedule(self):
         os.remove(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls")
+
+    def set_optional_subjects(self, subject, period):
+        self.optional_subjects[subject.split(" | ")[1]] = period
 
     def find_first_subject(self, day):
         wb = xlrd.open_workbook(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls",
@@ -59,12 +62,21 @@ class MIPTSchedule:
                 continue
 
             if current_day == day:
-                if current_subject in self.optional_subjects:
+                if current_subject in self.optional_subjects.keys():
                     should_skip = self.optional_subjects[current_subject] - 1
                     continue
 
+                # formatting time's style
+                if sheet.cell(row_index, 1).value:
+                    time = sheet.cell(row_index, 1).value.split(" - ")
+                    if len(time[0]) % 2 != 0:
+                        time[0] = time[0][0] + ":" + time[0][1:]
+                    else:
+                        time[0] = time[0][:2] + ":" + time[0][2:]
+                    time[1] = time[1][:2] + ":" + time[1][2:]
+
                 if current_subject:
-                    return sheet.cell(row_index, 1).value, current_subject
+                    return " - ".join(time) + " | " + current_subject
 
                 elif color != green:
                     position = num_of_group_col - 1  # will not cause error
@@ -74,7 +86,7 @@ class MIPTSchedule:
 
                         # don't use "color == another_color" because colors are sometimes read incorrectly
                         if another_subject:
-                            return sheet.cell(row_index, 1).value, another_subject
+                            return " - ".join(time) + " | " + another_subject
 
                         position -= 1
         return -1
