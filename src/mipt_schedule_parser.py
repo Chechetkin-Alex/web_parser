@@ -76,7 +76,7 @@ class MIPTSchedule:
                     time[1] = time[1][:2] + ":" + time[1][2:]
 
                 if current_subject:
-                    return " - ".join(time) + " | " + current_subject
+                    return " - ".join(time) + " | " + current_subject.strip()
 
                 elif color != green:
                     position = num_of_group_col - 1  # will not cause error
@@ -86,7 +86,7 @@ class MIPTSchedule:
 
                         # don't use "color == another_color" because colors are sometimes read incorrectly
                         if another_subject:
-                            return " - ".join(time) + " | " + another_subject
+                            return " - ".join(time) + " | " + another_subject.strip()
 
                         position -= 1
         return -1

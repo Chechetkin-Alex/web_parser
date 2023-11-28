@@ -1,8 +1,8 @@
 import re
 from aiogram import Router, F
-from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
+from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.filters import Command
-from aiogram.utils.formatting import Text, Bold, Italic
+from aiogram.utils.formatting import Text, Bold
 from aiogram.utils.markdown import hide_link
 from aiogram.enums import ParseMode
 from aiogram.fsm.state import State, StatesGroup
@@ -176,13 +176,19 @@ async def validate(message: Message, state: FSMContext):
 @router.message(Choosing.subjects)
 async def choosing_subjects(message: Message, state: FSMContext):
     user_data = await state.get_data()
+
     if message.text == "Подтвердить":
         answer = "\n"
-        for subject in user_data["removed_lessons"][:-1]:
-            answer += f"{subject},\n"
-        answer += f"{user_data['removed_lessons'][-1]}.\n"
-        await message.answer("<u>Отлично! Вот финальный список:</u>" + answer,
-                             parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
+        if len(user_data["removed_lessons"][:-1]) > 0:
+            for subject in user_data["removed_lessons"][:-1]:
+                answer += f"{subject},\n"
+            answer += f"{user_data['removed_lessons'][-1]}.\n"
+        if answer == "\n":
+            await message.answer("<u>Не забиваешь на пары, красава</u> 😉",
+                                 parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
+        else:
+            await message.answer("<u>Отлично! Вот финальный список:</u>" + answer,
+                                 parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
         await message.answer("Заношу в базу данных...")
 
         if await add_preferences(message.from_user.id, user_data):
@@ -193,12 +199,46 @@ async def choosing_subjects(message: Message, state: FSMContext):
             return
         await state.set_state(Choosing.complete)
         return
-    if message.text not in user_data["first_lessons"]:
+
+    if message.text == "undo":
+        if len(user_data["removed_lessons"]) > 0:
+            user_data["first_lessons"].pop(user_data["removed_lessons"][-1][0])
+            user_data["first_lessons"].insert(user_data["removed_lessons"][-1][0],
+                                              user_data["removed_lessons"][-1][1])
+            user_data["removed_lessons"].pop()
+            await state.update_data(removed_lessons=user_data["removed_lessons"],
+                                    first_lessons=user_data["first_lessons"])
+
+            answer = f"<b>Убрано:</b>\n"
+            answer += f"\n<b>В какие дни что остаётся:</b>\n"
+            days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
+            for i in range(0, 7):
+                if user_data["first_lessons"][i] == -1:
+                    continue
+                answer += f"<u>{days[i]}</u>: {user_data['first_lessons'][i]}\n"
+
+            await message.answer(answer, parse_mode=ParseMode.HTML,
+                                 reply_markup=kb.lessons_kb(user_data["first_lessons"]))
+        else:
+            await message.answer("А что мне отменить..")
+
+        return
+
+    not_found = True
+    for i, subject in enumerate(user_data["first_lessons"]):
+        if isinstance(subject, str) and message.text[:100] in subject:
+            if message.text not in user_data["removed_lessons"]:
+                user_data["removed_lessons"].append((i, subject))
+                await state.update_data(removed_lessons=user_data["removed_lessons"])
+                not_found = False
+            else:
+                await message.answer("Уже было")
+                return
+
+    if not_found:
         await message.answer("Не знаю такого")
         return
 
-    user_data["removed_lessons"].append(message.text)
-    await state.update_data(removed_lessons=user_data["removed_lessons"])
     await message.answer("А какая продолжительность <b>в парах</b> у этого предмета?",
                          parse_mode=ParseMode.HTML,
                          reply_markup=kb.periods_kb)
@@ -208,29 +248,33 @@ async def choosing_subjects(message: Message, state: FSMContext):
 @router.message(Choosing.period)
 async def choosing_period(message: Message, state: FSMContext):
     user_data = await state.get_data()
-    period = int(float(message.text) * 2)  # todo check int
+    try:
+        period = int(float(message.text) * 2)
+    except ValueError as e:
+        logging.error('Error: %s', exc_info=e)
+        await message.answer("Число, пожалуйста")
+        return
     answer = f"<b>Убрано:</b>\n"
     for subject in user_data["removed_lessons"][:-1]:
-        answer += f"{subject},\n"
-    answer += f"{user_data['removed_lessons'][-1]}.\n"
+        answer += f"{subject[1]},\n"
+    answer += f"{user_data['removed_lessons'][-1][1]}.\n"
     # todo handle all subjects a day deleted
-    # todo duplicated subjects
     answer += f"\n<b>В какие дни что остаётся:</b>\n"
     days = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"]
     for i in range(0, 7):
         if user_data["first_lessons"][i] == -1:
             continue
-        if user_data["first_lessons"][i] not in user_data["removed_lessons"]:
+        if all(user_data["first_lessons"][i] not in subject[1] for subject in user_data["removed_lessons"]):
             answer += f"<u>{days[i]}</u>: {user_data['first_lessons'][i]}\n"
         else:
             user_data["schedule"].set_optional_subjects(user_data["first_lessons"][i], period)
             await state.update_data(schedule=user_data["schedule"])
             new_subject = user_data["schedule"].find_first_subject(i + 1)
             user_data["first_lessons"].insert(i, new_subject)
+            user_data["first_lessons"].remove(user_data["removed_lessons"][-1][1])
             answer += f"<u>{days[i]}</u>: {new_subject}\n"
-            user_data["first_lessons"].remove(user_data["removed_lessons"][-1])
-            # todo delete several lessons
             await state.update_data(first_lessons=user_data["first_lessons"])
+
     await state.set_state(Choosing.subjects)
     await message.answer(answer, parse_mode=ParseMode.HTML, reply_markup=kb.lessons_kb(user_data["first_lessons"]))
 

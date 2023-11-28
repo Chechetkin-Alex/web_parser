@@ -28,7 +28,7 @@ def lessons_kb(lessons):
     for subject in lessons:
         if subject != -1:
             subjects.append([KeyboardButton(text=subject)])
-    # subjects.append([KeyboardButton(text="undo")])
+    subjects.append([KeyboardButton(text="undo")])
     subjects.append([KeyboardButton(text="Подтвердить")])
     return ReplyKeyboardMarkup(keyboard=subjects, resize_keyboard=True)
 
