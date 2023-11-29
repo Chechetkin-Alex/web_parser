@@ -19,11 +19,13 @@ from mipt_schedule_parser import MIPTSchedule
 
 
 def get_schedule():
-    schedule = MIPTSchedule(2, "Б05-211")
+    schedule = MIPTSchedule()
+    schedule.set_course(2)
     schedule.download_schedule()
+    print(schedule.get_all_groups())
     # schedule.find_first_class(datetime.datetime.today().weekday() + 1)
-    for i in range(8):
-        print(schedule.find_first_subject(i))
+    # for i in range(8):
+    #     print(schedule.find_first_subject(i))
 
 
 # def get_weather():

@@ -20,6 +20,7 @@ class Registration(StatesGroup):
     get_started = State()
     station = State()
     time_to_station = State()
+    course = State()
     group_num = State()
     validate = State()
 
@@ -102,34 +103,57 @@ async def get_station(message: Message, state: FSMContext):
         return
 
     await state.update_data(time_to_station=int(message.text))
-    await state.set_state(Registration.group_num)
-    await message.answer("А ещё, какой у тебя курс и номер группы?\n"
-                         "В формате <b>?, Б??-???</b>\n"
-                         "Например: <b>2, Б05-211</b>",
-                         reply_markup=kb.back_kb,
+    await state.set_state(Registration.course)
+    await message.answer("Выбери свой курс\n",
+                         reply_markup=kb.courses_kb,
                          parse_mode=ParseMode.HTML)
 
 
-@router.message(Registration.group_num)
-async def get_station(message: Message, state: FSMContext):
+@router.message(Registration.course)
+async def get_course(message: Message, state: FSMContext):
     if message.text.lower() == "назад":
         await state.set_state(Registration.time_to_station)
         await message.answer("Отлично! А сколько тебе <b>минут</b> до неё идти?",
                              reply_markup=kb.back_kb, parse_mode=ParseMode.HTML)
         return
-    if not re.compile(r"\d, [А-Я]\d{2}-\d{3}").match(message.text.upper()):
+    try:
+        if int(message.text) not in range(1, 5):
+            await message.answer("Какой-какой?")
+            return
+    except ValueError:
+        await message.answer("??")
+        return
+
+    await state.update_data(course=int(message.text))
+    schedule = MIPTSchedule()
+    schedule.set_course(int(message.text))
+    schedule.download_schedule()
+    await state.update_data(schedule=schedule)
+    await message.answer("Выбери свою группу", reply_markup=kb.groups_kb(schedule.get_all_groups()))
+    await state.set_state(Registration.group_num)
+
+
+@router.message(Registration.group_num)
+async def get_station(message: Message, state: FSMContext):
+    user_data = await state.get_data()
+    if message.text.lower() == "назад":
+        await state.set_state(Registration.time_to_station)
+        await message.answer("Выбери свою группу", reply_markup=kb.groups_kb(user_data["schedule"].get_all_groups()))
+        return
+    if not re.compile(r"[А-Я]\d{2}-\d{3}").match(message.text.upper()) or \
+            message.text not in user_data["schedule"].get_all_groups():
         await message.answer("Начальника, переделывай :(")
         return
 
-    course, group_num = message.text.split(", ")
-    await state.update_data(course=course, group_num=group_num)
+    user_data["schedule"].set_group(message.text)
+    await state.update_data(group_num=message.text, schedule=user_data["schedule"])
     await state.set_state(Registration.validate)
-    user_data = await state.get_data()
+
     await message.answer(f"<i>Сверяем данные</i>:\n\n"
                          f"<b>Имя</b>: {message.from_user.full_name} ,\n"
                          f"<b>Ближайшая станция</b>: {user_data['station']} ,\n"
                          f"<b>Сколько топать</b>: {user_data['time_to_station']} мин,\n"
-                         f"<b>Курс и номер группы</b>: {user_data['course']}, {user_data['group_num']} ,\n"
+                         f"<b>Курс и номер группы</b>: {user_data['course']}, {message.text} ,\n"
                          f"<del>Номер военного биле</del> Кхм, пожалуй, достаточно :D", parse_mode=ParseMode.HTML)
     await message.answer(f"Все верно?", reply_markup=kb.validation_kb)
 
@@ -143,7 +167,7 @@ async def validate(message: Message, state: FSMContext):
         await state.set_state(Registration.time_to_station)
         return
     if message.text == "Нет, ошибка в номере курса или группы":
-        await state.set_state(Registration.group_num)
+        await state.set_state(Registration.course)
         return
 
     user_data = await state.get_data()
@@ -155,9 +179,7 @@ async def validate(message: Message, state: FSMContext):
         return
 
     await message.answer(f"Запускаю поиск по предметам...")
-    schedule = MIPTSchedule(user_data["course"], user_data["group_num"])
-    await state.update_data(schedule=schedule)
-    schedule.download_schedule()
+    schedule = user_data["schedule"]
     first_lessons = []
     answer = f"<b>Вот, какие предметы тебя ждут по утрам:</b>\n"
     for day in range(1, 8):
@@ -179,7 +201,7 @@ async def choosing_subjects(message: Message, state: FSMContext):
 
     if message.text == "Подтвердить":
         answer = "\n"
-        if len(user_data["removed_lessons"][:-1]) > 0:
+        if len(user_data["removed_lessons"]) > 0:
             for subject in user_data["removed_lessons"][:-1]:
                 answer += f"{subject},\n"
             answer += f"{user_data['removed_lessons'][-1]}.\n"

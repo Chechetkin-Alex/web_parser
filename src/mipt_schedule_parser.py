@@ -1,3 +1,5 @@
+import re
+
 from bs4 import BeautifulSoup
 import xlrd
 import requests
@@ -10,8 +12,10 @@ class MIPTSchedule:
     path_to_schedule = "src/resources/"
     optional_subjects = dict()  # unit of measurement -- half of a pair
 
-    def __init__(self, course, group):
+    def set_course(self, course):
         self.course = course
+
+    def set_group(self, group):
         self.group = group
 
     def download_schedule(self):
@@ -33,6 +37,16 @@ class MIPTSchedule:
     def set_optional_subjects(self, subject, period):
         self.optional_subjects[subject.split(" | ")[1]] = period
 
+    def get_all_groups(self):
+        wb = xlrd.open_workbook(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls",
+                                formatting_info=True)
+        sheet = wb.sheet_by_index(0)
+        groups = []
+        for group in sheet.row(4):
+            if re.compile(r"[А-Я]\d{2}-\d{3}").match(group.value):
+                groups.append(group.value)
+        return groups
+
     def find_first_subject(self, day):
         wb = xlrd.open_workbook(f"{self.path_to_schedule}schedule_for_course_{self.course}.xls",
                                 formatting_info=True)
@@ -41,8 +55,6 @@ class MIPTSchedule:
         for col, cell in enumerate(sheet.row(4)):
             if cell.value == self.group:
                 num_of_group_col = col
-        if num_of_group_col == -1:
-            raise ValueError("Can't find group")
 
         green = (204, 255, 204)  # background
 

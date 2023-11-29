@@ -1,9 +1,22 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
+
 from src.trains_parser import TrainsParser
 
 initial_kb = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Погнали")]], resize_keyboard=True)
 
 back_kb = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Назад")]], resize_keyboard=True)
+
+courses_kb = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text="1"), KeyboardButton(text="2"), KeyboardButton(text="3"), KeyboardButton(text="4")],
+              [KeyboardButton(text="Назад")]], resize_keyboard=True)
+
+
+def groups_kb(groups_num):
+    builder = ReplyKeyboardBuilder()
+    for group in groups_num:
+        builder.add(KeyboardButton(text=group))
+    return builder.as_markup(resize_keyboard=True)
 
 
 def station_kb():
