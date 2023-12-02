@@ -13,10 +13,18 @@ courses_kb = ReplyKeyboardMarkup(
 
 
 def groups_kb(groups_num):
-    builder = ReplyKeyboardBuilder()
+    sub_groups = []
+    groups = []
+    pos = 0
     for group in groups_num:
-        builder.add(KeyboardButton(text=group))
-    return builder.as_markup(resize_keyboard=True)
+        if pos < 5:
+            sub_groups.append(KeyboardButton(text=group))
+            pos += 1
+        else:
+            pos = 0
+            groups.append(sub_groups)
+            sub_groups = []
+    return ReplyKeyboardMarkup(keyboard=groups, resize_keyboard=True)
 
 
 def station_kb():
@@ -28,7 +36,7 @@ def station_kb():
 
 
 validation_kb = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text="-Сова, подтверди! -Подтверждаю.")],
+    [KeyboardButton(text="-Филин, подтверди! -Подтверждаю.")],
     [KeyboardButton(text="Нет, ошибка в станции")],
     [KeyboardButton(text="Нет, ошибка во времени")],
     [KeyboardButton(text="Нет, ошибка в номере группы")],

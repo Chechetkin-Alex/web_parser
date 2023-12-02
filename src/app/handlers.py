@@ -1,10 +1,8 @@
 import re
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.filters import Command
-from aiogram.utils.formatting import Text, Bold
 from aiogram.utils.markdown import hide_link
-from aiogram.enums import ParseMode
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.app.database.requests import *
@@ -28,13 +26,12 @@ class Registration(StatesGroup):
 class Choosing(StatesGroup):
     subjects = State()
     period = State()
-    complete = State()
 
 
 @router.message(Command("start"))
 async def cmd_start_handler(message: Message, state: FSMContext):
     is_registered = await does_user_exist(message.from_user.id)
-    if not is_registered:
+    if not is_registered[0] and not is_registered[1]:
         await state.set_state(Registration.get_started)
         await message.answer(f"{hide_link('https://images.stopgame.ru/news/2017/11/25/bz9eZgZ0j.jpg')}"
                              f"- Для чего я создан?\n"
@@ -50,10 +47,15 @@ async def cmd_start_handler(message: Message, state: FSMContext):
                              "за 5 минут до выхода. Естественно с расчетом на то, что ты идешь на пары. "
                              "Список пар, которые ты посещаешь, далее можно будет указать.\n"
                              "Ну-с, давай продолжим!", reply_markup=kb.initial_kb)
+    elif not is_registered[1]:
+        await message.answer(f"Давненько не виделись, {message.from_user.full_name}!\n"
+                             f"Но ты так и не ввел свои предпочтения по занятиям. Давай сделаем это сейчас?",
+                             reply_markup=kb.initial_kb())
+        await state.set_state(Choosing.subjects)
     else:
-        await message.answer(
-            f'Давненько не виделись, {message.from_user.full_name}!\nВсе в силе или нужно что-то поменять?',
-            reply_markup=ReplyKeyboardRemove())  # todo
+        await message.answer(f"Давненько не виделись, {message.from_user.full_name}!\n"
+                             f"Все в силе, таймер стоит. Жди)\n\n"
+                             f"Если хочешь удалиться, напиши /restart")
 
 
 @router.message(Registration.get_started)
@@ -62,7 +64,7 @@ async def get_station(message: Message, state: FSMContext):
     await state.update_data(tg_id=message.from_user.id)
     await message.answer("Ты всегда можешь вернуться назад написав в чат <b>Назад</b> "
                          "или нажав соответствующую кнопку.",
-                         reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.HTML)
+                         reply_markup=ReplyKeyboardRemove())
     await message.answer("Выбери станцию из уже доступных:", reply_markup=kb.station_kb())
 
 
@@ -88,7 +90,7 @@ async def get_station(message: Message, state: FSMContext):
     await state.update_data(station=message.text)
     await state.set_state(Registration.time_to_station)
     await message.answer("Отлично! А сколько тебе <b>минут</b> до неё идти?",
-                         reply_markup=kb.back_kb, parse_mode=ParseMode.HTML)
+                         reply_markup=kb.back_kb)
 
 
 @router.message(Registration.time_to_station)
@@ -105,8 +107,7 @@ async def get_station(message: Message, state: FSMContext):
     await state.update_data(time_to_station=int(message.text))
     await state.set_state(Registration.course)
     await message.answer("Выбери свой курс\n",
-                         reply_markup=kb.courses_kb,
-                         parse_mode=ParseMode.HTML)
+                         reply_markup=kb.courses_kb, )
 
 
 @router.message(Registration.course)
@@ -114,7 +115,7 @@ async def get_course(message: Message, state: FSMContext):
     if message.text.lower() == "назад":
         await state.set_state(Registration.time_to_station)
         await message.answer("Отлично! А сколько тебе <b>минут</b> до неё идти?",
-                             reply_markup=kb.back_kb, parse_mode=ParseMode.HTML)
+                             reply_markup=kb.back_kb)
         return
     try:
         if int(message.text) not in range(1, 5):
@@ -154,7 +155,7 @@ async def get_station(message: Message, state: FSMContext):
                          f"<b>Ближайшая станция</b>: {user_data['station']} ,\n"
                          f"<b>Сколько топать</b>: {user_data['time_to_station']} мин,\n"
                          f"<b>Курс и номер группы</b>: {user_data['course']}, {message.text} ,\n"
-                         f"<del>Номер военного биле</del> Кхм, пожалуй, достаточно :D", parse_mode=ParseMode.HTML)
+                         f"<del>Номер военного биле</del> Кхм, пожалуй, достаточно :D")
     await message.answer(f"Все верно?", reply_markup=kb.validation_kb)
 
 
@@ -189,7 +190,6 @@ async def validate(message: Message, state: FSMContext):
         if first_lessons[i] != -1:
             answer += f"<u>{days[i]}</u>: {first_lessons[i]}\n"
     await message.answer(answer + "\n<b>На какие из них забиваешь?)</b>",
-                         parse_mode=ParseMode.HTML,
                          reply_markup=kb.lessons_kb(first_lessons))
     await state.update_data(removed_lessons=[], first_lessons=first_lessons)
     await state.set_state(Choosing.subjects)
@@ -206,11 +206,9 @@ async def choosing_subjects(message: Message, state: FSMContext):
                 answer += f"{subject},\n"
             answer += f"{user_data['removed_lessons'][-1]}.\n"
         if answer == "\n":
-            await message.answer("<u>Не забиваешь на пары, красава</u> 😉",
-                                 parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
+            await message.answer("<u>Не забиваешь на пары, красава</u> 😉", reply_markup=ReplyKeyboardRemove())
         else:
-            await message.answer("<u>Отлично! Вот финальный список:</u>" + answer,
-                                 parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
+            await message.answer("<u>Отлично! Вот финальный список:</u>" + answer, reply_markup=ReplyKeyboardRemove())
         await message.answer("Заношу в базу данных...")
 
         if await add_preferences(message.from_user.id, user_data):
@@ -219,7 +217,7 @@ async def choosing_subjects(message: Message, state: FSMContext):
             await message.answer("Error 404 я сломался :((\nНапиши админу @snakemanysss")
             await state.clear()
             return
-        await state.set_state(Choosing.complete)
+        await state.clear()
         return
 
     if message.text == "undo":
@@ -239,7 +237,7 @@ async def choosing_subjects(message: Message, state: FSMContext):
                     continue
                 answer += f"<u>{days[i]}</u>: {user_data['first_lessons'][i]}\n"
 
-            await message.answer(answer, parse_mode=ParseMode.HTML,
+            await message.answer(answer,
                                  reply_markup=kb.lessons_kb(user_data["first_lessons"]))
         else:
             await message.answer("А что мне отменить..")
@@ -262,7 +260,6 @@ async def choosing_subjects(message: Message, state: FSMContext):
         return
 
     await message.answer("А какая продолжительность <b>в парах</b> у этого предмета?",
-                         parse_mode=ParseMode.HTML,
                          reply_markup=kb.periods_kb)
     await state.set_state(Choosing.period)
 
@@ -298,22 +295,17 @@ async def choosing_period(message: Message, state: FSMContext):
             await state.update_data(first_lessons=user_data["first_lessons"])
 
     await state.set_state(Choosing.subjects)
-    await message.answer(answer, parse_mode=ParseMode.HTML, reply_markup=kb.lessons_kb(user_data["first_lessons"]))
-
-
-@router.message(Choosing.complete)
-async def accomplished(message: Message, state: FSMContext):
-    pass
+    await message.answer(answer, reply_markup=kb.lessons_kb(user_data["first_lessons"]))
 
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
-    content = Text("Hello, \n\n", Bold(message.from_user.full_name), "!")  # todo
-    await message.answer(**content.as_kwargs())
+    await message.answer("Привет! Я бот, который напоминает тебе взять зонтик.\n"
+                         "Напиши /start , чтобы узнать больше.")
 
-# @router.message()
-# async def echo_handler(message: Message) -> None:
-#     try:
-#         await message.send_copy(chat_id=message.chat.id)
-#     except TypeError:
-#         await message.answer("Nice try!")
+
+@router.message(Command("restart"))
+async def cmd_restart(message: Message):
+    if await restart(message.from_user.id):
+        await message.answer("Рассылок больше не будет.\n"
+                             "Если захочешь продолжить пользоваться моей помощью, обращайся (/start)!")

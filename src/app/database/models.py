@@ -21,7 +21,7 @@ class Users(Base):
     course: Mapped[int]
     group_num: Mapped[str] = mapped_column(String(15))
 
-    preferences = relationship("Preferences", backref="users")
+    preferences = relationship("Preferences", backref="users", cascade="all, delete")
 
 
 class Preferences(Base):

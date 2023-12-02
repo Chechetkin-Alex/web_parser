@@ -1,7 +1,7 @@
 # import datetime
 # from trains_parser import TrainsParser
 from mipt_schedule_parser import MIPTSchedule
-# from weather_parser import Weather
+from weather_parser import Weather
 
 
 # def get_train():
@@ -18,20 +18,20 @@ from mipt_schedule_parser import MIPTSchedule
 #     train = route.find_nearest_train(time)
 
 
-def get_schedule():
-    schedule = MIPTSchedule()
-    schedule.set_course(2)
-    schedule.download_schedule()
-    print(schedule.get_all_groups())
+# def get_schedule():
+#     schedule = MIPTSchedule()
+#     schedule.set_course(2)
+#     schedule.download_schedule()
+#     print(schedule.get_all_groups())
     # schedule.find_first_class(datetime.datetime.today().weekday() + 1)
     # for i in range(8):
     #     print(schedule.find_first_subject(i))
 
 
-# def get_weather():
-#     beskudnikovo_coord = (55.882167, 37.567267)
-#     weather = Weather()
-#     print(weather.get_weather(beskudnikovo_coord))
+def get_weather():
+    beskudnikovo_coord = (55.882167, 37.567267)
+    weather = Weather()
+    print(weather.get_weather(beskudnikovo_coord))
 
 
-get_schedule()
+get_weather()

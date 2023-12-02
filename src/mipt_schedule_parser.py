@@ -9,7 +9,7 @@ import os
 class MIPTSchedule:
     course = 0
     group = 0
-    path_to_schedule = "src/resources/"
+    path_to_schedule = "resources/"
     optional_subjects = dict()  # unit of measurement -- half of a pair
 
     def set_course(self, course):
