@@ -6,7 +6,7 @@ from aiogram.utils.markdown import hide_link
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.app.database.requests import *
-from src.trains_parser import TrainsParser as Train
+from src.trains_parser import Trains as Train
 from src.mipt_schedule_parser import MIPTSchedule
 import src.app.keyboards as kb
 import asyncio
@@ -82,7 +82,7 @@ async def get_station(message: Message, state: FSMContext):
                              "Список пар, которые ты посещаешь, далее можно будет указать.\n"
                              "Ну-с, давай продолжим!", reply_markup=kb.initial_kb)
         return
-    if message.text not in kb.TrainsParser().stations.keys():
+    if message.text not in kb.Trains().stations.keys():
         await message.answer("Я такую пока не знаю(\n"
                              "Лучше выбери из моего списка")
         return
@@ -171,6 +171,7 @@ async def validate(message: Message, state: FSMContext):
         await state.set_state(Registration.course)
         return
 
+    await state.update_data(chat_id=message.chat.id)
     user_data = await state.get_data()
     if await add_user(user_data):
         await message.answer("Всё классно, я тебе запомнил)", reply_markup=ReplyKeyboardRemove())

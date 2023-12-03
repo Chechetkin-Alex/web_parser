@@ -4,31 +4,14 @@ import requests
 
 class Weather:
     url = "https://api.weather.yandex.ru/v2/informers?"
-    novodachnaya_coord = (55.924457, 37.527858)
+    mipt_coord = (55.924457, 37.527858)
+    bad_weather = ("light-rain", "rain", "heavy-rain", "showers", "wet-snow",
+                   "hail", "thunderstorm", "thunderstorm-with-rain", "thunderstorm-with-hail")
 
-    def get_weather(self, start_area):
-        weather_in_start_area = self.get_weather_in_area(start_area)
-        weather_in_novodachnaya = self.get_weather_in_area(self.novodachnaya_coord)
-
-        """
-            light-rain — небольшой дождь.
-            rain — дождь.
-            heavy-rain — сильный дождь.
-            showers — ливень.
-            wet-snow — дождь со снегом.
-            hail — град.
-            thunderstorm — гроза.
-            thunderstorm-with-rain — дождь с грозой.
-            thunderstorm-with-hail — гроза с градом.
-            остальное — жить можно.
-        """
-
-        return weather_in_start_area, weather_in_novodachnaya
-
-    def get_weather_in_area(self, area):
+    def get_weather_around_mipt(self):
         params = {
-            "lat": area[0],
-            "lon": area[1]
+            "lat": self.mipt_coord[0],
+            "lon": self.mipt_coord[1]
         }
         header = {'X-Yandex-API-Key': config.yandex_weather_api_key.get_secret_value()}
         response = requests.get(self.url, params=params, headers=header).json()
@@ -41,5 +24,11 @@ class Weather:
             "evening": response["forecast"]["parts"][1]["condition"]
         }
 
-        return weather_with_day_time
+        if weather_with_day_time["morning"] in self.bad_weather:
+            return "утром"
+        if weather_with_day_time["day"] in self.bad_weather:
+            return "днём"
+        if weather_with_day_time["evening"] in self.bad_weather:
+            return "вечером"
+        return 0
 

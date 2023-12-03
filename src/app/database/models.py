@@ -12,25 +12,35 @@ class Base(AsyncAttrs, DeclarativeBase):
 
 
 class Users(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id = mapped_column(BigInteger)
+    chat_id = mapped_column(BigInteger)
     station: Mapped[str] = mapped_column(String(50))
     time_to_station: Mapped[int]
     course: Mapped[int]
     group_num: Mapped[str] = mapped_column(String(15))
 
     preferences = relationship("Preferences", backref="users", cascade="all, delete")
+    waiting_list = relationship("WaitingList", backref="users", cascade="all, delete")
 
 
 class Preferences(Base):
-    __tablename__ = 'preferences'
+    __tablename__ = "preferences"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     day: Mapped[int]
     first_lesson: Mapped[str] = mapped_column(String(250))
+
+
+class WaitingList(Base):
+    __tablename__ = "waiting_list"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("users.chat_id"))
+    time_to_write: Mapped[str] = mapped_column(String(10))
 
 
 async def async_main():

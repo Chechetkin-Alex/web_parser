@@ -82,7 +82,7 @@ class MIPTSchedule:
                 if sheet.cell(row_index, 1).value:
                     time = sheet.cell(row_index, 1).value.split(" - ")
                     if len(time[0]) % 2 != 0:
-                        time[0] = time[0][0] + ":" + time[0][1:]
+                        time[0] = "0" + time[0][0] + ":" + time[0][1:]
                     else:
                         time[0] = time[0][:2] + ":" + time[0][2:]
                     time[1] = time[1][:2] + ":" + time[1][2:]
