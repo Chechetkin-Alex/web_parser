@@ -17,6 +17,10 @@ TELEGRAM_API_TOKEN = ... (ask BotFather)
 SQLALCHEMY_URL = sqlite+aiosqlite:///resources/db.sqlite3
 ```
 
+Then run
+```shell
+python3 bot.py
+```
 **Enjoy!**
 
 This project is made for educational purposes.
