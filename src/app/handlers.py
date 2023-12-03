@@ -6,7 +6,6 @@ from aiogram.utils.markdown import hide_link
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.app.database.requests import *
-from src.trains_parser import Trains as Train
 from src.mipt_schedule_parser import MIPTSchedule
 import src.app.keyboards as kb
 import asyncio
@@ -37,7 +36,7 @@ async def cmd_start_handler(message: Message, state: FSMContext):
                              f"- Для чего я создан?\n"
                              f"- Чтоб напоминать мне взять зонтик.\n"
                              f"- Боже мой...")
-        await asyncio.sleep(0.01)  # todo 1
+        await asyncio.sleep(0.5)
         await message.answer("А если серьезно, то с автором данного бота часто "
                              "случались приключения, когда он, выходя из дома, по тем или иным "
                              "причинам забывал взять зонтик, а ходить осенью в мокрой ветровке "

@@ -37,7 +37,8 @@ async def make_decision(bot, scheduler):
     if will_it_rain:
         for chat, timing in await get_clients_for_today():
             station, time_to_station = await get_station_and_time_to_station(chat)
-            target_time = datetime.strptime(timing, "%H:%M") - timedelta(minutes=15) - timedelta(
+            # 15 min from Novodachnaya to MIPT, 5 min before leaving home
+            target_time = datetime.strptime(timing, "%H:%M") - timedelta(minutes=15 + 5) - timedelta(
                 minutes=time_to_station) - timedelta(minutes=Trains().stations[station][1])
             scheduler.add_job(send_notification, "date",
                               run_time=datetime.now().replace(
